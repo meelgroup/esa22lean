@@ -40,7 +40,7 @@ theorem relaxedRun_bad_level_prefix_recurrence (P : Params) (A : Stream P)
     rfl
   rw [hterminal]
   by_cases hk : k ≤ P.m
-  · exact relaxedRunPrefix_bad_level_bound P A k b hk (htail hk) P.m
+  · exact relaxedRunPrefix_bad_level_bound P A k b hb hk (htail hk) P.m
       (Nat.le_refl P.m)
   · have hzero :
         (relaxedRunPrefix P A (Fin.last P.m)).toOuterMeasure
