@@ -20,14 +20,15 @@ under the project's false-goal protocol and refuted by
 `relaxed_good_rate_union_bound_false`.
 -/
 theorem relaxed_good_rate_union_bound (P : Params) (A : Stream P) (b : Real)
+    (hb : 0 ≤ b)
     (hslice : ∀ k : Nat, 0 < k → k ≤ P.m → k ≤ criticalLevel P A →
       Arlib.Approximation.outProbR (relaxedRunCost P A)
           ({s | s.level = k} ∩ relaxedErrorEvent P A) ≤ b) :
     Arlib.Approximation.outProbR (relaxedRunCost P A)
         ({s | s.level ≤ criticalLevel P A} ∩ relaxedErrorEvent P A) ≤
       (P.m : Real) * b := by
-  -- DISPROVED: relaxed_good_rate_union_bound_false
-  -- REPAIR: (hb : 0 ≤ b)
+  -- Added `hb : 0 ≤ b`; `relaxed_good_rate_union_bound_false` refutes the
+  -- version without this hypothesis.
   sorry
 
 /--
