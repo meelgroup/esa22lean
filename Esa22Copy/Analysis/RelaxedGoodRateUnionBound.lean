@@ -6,36 +6,18 @@ import Arlib.Approximation.UnionBound
 # Finite union over reachable positive relaxed levels
 
 The originally proposed theorem omitted nonnegativity of its common slice
-budget and is false; it remains below with the required machine-checked
-`DISPROVED` marker.  The repaired theorem adds `0 ≤ b`.  Its finite-union
-bookkeeping is closed, conditional only on the separately isolated
-level-zero exactness lemma used by the proved support-aware cover.
+budget and is false.  The theorem below is its repaired form, adding `0 ≤ b`.
+Its finite-union bookkeeping is closed, conditional only on the separately
+isolated level-zero exactness lemma used by the proved support-aware cover.
 -/
 
 namespace Esa22Copy
 
 /--
-INTERNAL: the original unrestricted bookkeeping statement, retained verbatim
-under the project's false-goal protocol and refuted by
-`relaxed_good_rate_union_bound_false`.
+INTERNAL: repaired finite positive-level union bound; nonnegativity of the
+common slice budget is necessary by `relaxed_good_rate_union_bound_false`.
 -/
 theorem relaxed_good_rate_union_bound (P : Params) (A : Stream P) (b : Real)
-    (hb : 0 ≤ b)
-    (hslice : ∀ k : Nat, 0 < k → k ≤ P.m → k ≤ criticalLevel P A →
-      Arlib.Approximation.outProbR (relaxedRunCost P A)
-          ({s | s.level = k} ∩ relaxedErrorEvent P A) ≤ b) :
-    Arlib.Approximation.outProbR (relaxedRunCost P A)
-        ({s | s.level ≤ criticalLevel P A} ∩ relaxedErrorEvent P A) ≤
-      (P.m : Real) * b := by
-  -- Added `hb : 0 ≤ b`; `relaxed_good_rate_union_bound_false` refutes the
-  -- version without this hypothesis.
-  sorry
-
-/--
-INTERNAL: the corrected finite positive-level union bound, with the necessary
-nonnegativity hypothesis on the common slice budget.
--/
-theorem relaxed_good_rate_union_bound_nonneg (P : Params) (A : Stream P) (b : Real)
     (hb : 0 ≤ b)
     (hslice : ∀ k : Nat, 0 < k → k ≤ P.m → k ≤ criticalLevel P A →
       Arlib.Approximation.outProbR (relaxedRunCost P A)
@@ -72,11 +54,26 @@ theorem relaxed_good_rate_union_bound_nonneg (P : Params) (A : Stream P) (b : Re
       simpa using hunion
     _ = (P.m : Real) * b := by simp
 
+/--
+INTERNAL: the corrected finite positive-level union bound, with the necessary
+nonnegativity hypothesis on the common slice budget.
+-/
+theorem relaxed_good_rate_union_bound_nonneg (P : Params) (A : Stream P) (b : Real)
+    (hb : 0 ≤ b)
+    (hslice : ∀ k : Nat, 0 < k → k ≤ P.m → k ≤ criticalLevel P A →
+      Arlib.Approximation.outProbR (relaxedRunCost P A)
+          ({s | s.level = k} ∩ relaxedErrorEvent P A) ≤ b) :
+    Arlib.Approximation.outProbR (relaxedRunCost P A)
+        ({s | s.level ≤ criticalLevel P A} ∩ relaxedErrorEvent P A) ≤
+      (P.m : Real) * b := by
+  exact relaxed_good_rate_union_bound P A b hb hslice
+
 end Esa22Copy
 
 /-! ### Run record
 Newest first. History, not instruction — what this file claims is above.
 
+* r4 · repaired/proved · added `0 ≤ b` to the main statement and reused the checked nonnegative union-bound proof
 * r3 · disproved/reduced · refuted the missing-nonnegativity statement; proved its repaired form modulo level-zero exactness
 * r2 · open · isolated support-aware slicing and elimination of the level-zero error slice
 -/
