@@ -28,7 +28,10 @@ theorem relaxed_good_rate_error_probability_le (P : Params) (A : Stream P)
     Arlib.Approximation.outProbR (relaxedRunCost P A)
         ({s | s.level ≤ criticalLevel P A} ∩ relaxedErrorEvent P A) ≤
         (P.m : Real) * (P.delta / (4 * (P.m : Real))) := by
-      apply relaxed_good_rate_union_bound P A
+      apply relaxed_good_rate_union_bound_nonneg P A
+      · have hdelta : 0 ≤ P.delta := P.hdelta.1.le
+        have hm : 0 ≤ (P.m : Real) := by positivity
+        positivity
       intro k hkpos hkstream hkcritical
       calc
         Arlib.Approximation.outProbR (relaxedRunCost P A)
@@ -56,6 +59,8 @@ end Esa22Copy
 /-! ### Run record
 Newest first. History, not instruction — what this file claims is above.
 
+* r4 · repaired · applied the corrected union bound and discharged its added
+  nonnegative common-budget hypothesis
 * r3 · reduced · proved the support, coupling, cutoff, and threshold steps; left
   multiplicative concentration and the finite positive-level union isolated
 * r2 · reduced · isolated coupling, multiplicative concentration, cutoff arithmetic,
