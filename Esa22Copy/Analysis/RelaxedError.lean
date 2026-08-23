@@ -48,5 +48,6 @@ end Esa22Copy
 /-! ### Run record
 Newest first. History, not instruction — what this file claims is above.
 
+* r2 · repaired · supplied `hlarge` to the repaired bad-rate and good-rate bounds
 * r1 · reduced · closed the headline by the high-level and low-level-error union bound
 -/
