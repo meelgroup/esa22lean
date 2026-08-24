@@ -1,3 +1,4 @@
 # The headlines of this development, one per line.
 # The axiom profile of each is read from Lean whenever the checks run.
 Esa22Copy.esa22Copy
+Esa22Copy.bernoulliSum_twoSidedChernoff

@@ -2,6 +2,8 @@ import Arlib.Prelude
 import Mathlib.Algebra.Order.Floor.Ring
 import Mathlib.Analysis.SpecialFunctions.Log.Base
 import Mathlib.Data.Finset.Image
+import Mathlib.MeasureTheory.Integral.Bochner.Basic
+import Mathlib.Probability.Independence.Basic
 import Esa22Copy.Meta.ModelClosure
 
 /-!
@@ -56,5 +58,20 @@ noncomputable def itemBits (P : Params) : Nat :=
 /-- `F₀(A)`: the number of distinct universe values occurring in `A`. -/
 def F0 {P : Params} (A : Stream P) : Nat :=
   (distinctSet A).card
+
+/-! ## Finite Boolean families -/
+
+/-- The real-valued sum of a finite family of Boolean random variables. -/
+def bernoulliSum {Omega : Type*} {k : Nat} (v : Fin k → Omega → Bool) (omega : Omega) : Real :=
+  ∑ i, if v i omega then 1 else 0
+
+/-- The expectation of a finite Boolean sum under `P`. -/
+noncomputable def bernoulliMean {Omega : Type*} [MeasurableSpace Omega] {k : Nat}
+    (P : MeasureTheory.Measure Omega) (v : Fin k → Omega → Bool) : Real :=
+  MeasureTheory.integral P (bernoulliSum v)
+
+/-- The inclusive event that `V` deviates from `mu` by at least the relative factor `beta`. -/
+def relativeDeviationEvent {Omega : Type*} (V : Omega → Real) (mu beta : Real) : Set Omega :=
+  {omega | beta * mu ≤ |V omega - mu|}
 
 end Esa22Copy

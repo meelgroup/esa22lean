@@ -25,13 +25,7 @@ theorem esa22Copy (hprior : Prior) (P : Params) (A : Stream P) :
 
 /-- A Bernoulli PMF at an arbitrary real rate in `[0, 1]`. -/
 noncomputable def bernoulliPMF (p : Set.Icc (0 : Real) 1) : PMF Bool :=
-  PMF.ofFintype
-    (fun b => if b then ENNReal.ofReal (p : Real) else ENNReal.ofReal (1 - (p : Real)))
-    (by
-      rw [Fintype.sum_bool]
-      simp only [ite_true, Bool.false_eq_true, ite_false]
-      rw [← ENNReal.ofReal_add p.property.1 (sub_nonneg.mpr p.property.2)]
-      norm_num)
+  bernoulliPMFModel p
 
 /--
 Draw independent Bernoulli variables at the supplied real rates and return their sum.
@@ -40,11 +34,7 @@ an external probability space.  The rates are arbitrary reals in `[0, 1]`.
 -/
 noncomputable def bernoulliSumPMF :
     (k : Nat) → (p : Fin k → Set.Icc (0 : Real) 1) → PMF Real
-  | 0, _ => PMF.pure 0
-  | k + 1, p =>
-      (bernoulliPMF (p 0)).bind fun b =>
-        (bernoulliSumPMF k fun i => p i.succ).bind fun s =>
-          PMF.pure ((if b then 1 else 0) + s)
+  | k, p => bernoulliSumPMFModel k p
 
 /--
 For independent Bernoulli draws with arbitrary (not necessarily identical) real rates,
@@ -58,14 +48,7 @@ theorem bernoulliSum_twoSidedChernoff
     ((bernoulliSumPMF k p).toOuterMeasure
       {V | β * (∑ i, (p i : Real)) ≤ |V - ∑ i, (p i : Real)|}).toReal ≤
       2 * Real.exp (- (β ^ 2 * ∑ i, (p i : Real)) / (2 + β)) := by
-  apply bernoulliSum_twoSidedChernoff_core bernoulliPMF bernoulliSumPMF
-  · intro q b
-    simp [bernoulliPMF, PMF.ofFintype_apply]
-  · intro p
-    rfl
-  · intro n q
-    rfl
-  · exact hβ
+  exact bernoulliSum_twoSidedChernoff_proof hprior k p β hβ
 
 end Esa22Copy
 

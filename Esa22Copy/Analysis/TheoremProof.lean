@@ -2,6 +2,8 @@ import Esa22Copy.Analysis.AccuracyAssembly
 import Esa22Copy.Analysis.PaperSpace
 import Esa22Copy.Analysis.RunCost
 import Esa22Copy.Analysis.RunPeak
+import Esa22Copy.Analysis.BernoulliSumChernoffCore
+import Esa22Copy.Model.BernoulliSum
 
 /-!
 # Proof assembly for the ESA 2022 headline theorem
@@ -38,6 +40,22 @@ theorem esa22Copy_proof (_hprior : Prior) (P : Params) (A : Stream P) :
       (fail_probability_le P A)
       (nonfail_error_le_relaxed_error P A)
       (relaxed_error_probability_le P A (Nat.le_of_not_gt hsmall))
+
+/-- INTERNAL: specialization of the recursive-law Chernoff theorem to the public PMFs. -/
+theorem bernoulliSum_twoSidedChernoff_proof
+    (_hprior : Prior) (k : Nat) (p : Fin k → Set.Icc (0 : Real) 1)
+    (β : Real) (hβ : 0 < β) :
+    ((bernoulliSumPMFModel k p).toOuterMeasure
+      {V | β * (∑ i, (p i : Real)) ≤ |V - ∑ i, (p i : Real)|}).toReal ≤
+      2 * Real.exp (- (β ^ 2 * ∑ i, (p i : Real)) / (2 + β)) := by
+  apply bernoulliSum_twoSidedChernoff_core bernoulliPMFModel bernoulliSumPMFModel
+  · intro q b
+    simp [bernoulliPMFModel, PMF.ofFintype_apply]
+  · intro p
+    rfl
+  · intro n q
+    rfl
+  · exact hβ
 
 end Esa22Copy
 
