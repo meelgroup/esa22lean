@@ -1,6 +1,7 @@
 import Esa22Copy.Model.Prior
 import Esa22Copy.Model.Pseudocode
 import Esa22Copy.Analysis.TheoremProof
+import Esa22Copy.Analysis.BernoulliSumChernoffCore
 
 /-!
 # Accuracy and worst-case space of the ESA 2022 distinct-elements estimator
@@ -57,7 +58,14 @@ theorem bernoulliSum_twoSidedChernoff
     ((bernoulliSumPMF k p).toOuterMeasure
       {V | β * (∑ i, (p i : Real)) ≤ |V - ∑ i, (p i : Real)|}).toReal ≤
       2 * Real.exp (- (β ^ 2 * ∑ i, (p i : Real)) / (2 + β)) := by
-  sorry
+  apply bernoulliSum_twoSidedChernoff_core bernoulliPMF bernoulliSumPMF
+  · intro q b
+    simp [bernoulliPMF, PMF.ofFintype_apply]
+  · intro p
+    rfl
+  · intro n q
+    rfl
+  · exact hβ
 
 end Esa22Copy
 
