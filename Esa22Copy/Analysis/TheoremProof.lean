@@ -1,9 +1,9 @@
+import Esa22Copy.Analysis.SpaceBound
 import Esa22Copy.Analysis.AccuracyAssembly
 import Esa22Copy.Analysis.PaperSpace
 import Esa22Copy.Analysis.RunCost
 import Esa22Copy.Analysis.RunPeak
-import Esa22Copy.Analysis.BernoulliSumChernoffCore
-import Esa22Copy.Model.BernoulliSum
+import Esa22Copy.Interface.ProgramModel
 
 /-!
 # Proof assembly for the ESA 2022 headline theorem
@@ -11,51 +11,31 @@ import Esa22Copy.Model.BernoulliSum
 This module combines the probability analysis, the support-wise deterministic space
 invariant, and the displayed asymptotic item-space calculation.  The audit surface in
 `Model.Theorem` contains only the paper-facing statement and delegates here.
+
+The statement is about `estimatorOutput` — the program of `Model/Program.lean`
+with its meters dropped — and `estimatorOutput_eq` is what turns it into the
+`Finset` model the analysis below is carried out in.  That rewrite is the only
+place the two representations meet.
 -/
 
 namespace Esa22Copy
 
 /--
-PAPER: esa22-final.tex:507-508, support-wise form of the worst-case item-space observation.
--/
-theorem run_worstCaseSpace (P : Params) (A : Stream P) :
-    WorstCaseSpace (run P A) (threshold P * itemBits P) := by
-  intro outcome houtcome
-  have hpeak := run_peakSamples_le_threshold P A outcome houtcome
-  refine ⟨hpeak, ?_⟩
-  rw [run_cost_eq P A outcome houtcome]
-  exact Nat.mul_le_mul_right (itemBits P) hpeak
-
-/--
 PAPER: esa22-final.tex:500-508, correctness and worst-case item-space of the estimator.
 -/
 theorem esa22Copy_proof (_hprior : Prior) (P : Params) (A : Stream P) :
-    1 - P.delta ≤ Arlib.Approximation.outProbR (run P A) (accurateEvent P A) ∧
-    WorstCaseSpace (run P A) (threshold P * itemBits P) ∧
+    1 - P.delta ≤ Arlib.Approximation.outProbR (estimatorOutput P A) (accurateEvent P A) ∧
+    Arlib.Computation.worstSpace Arlib.Computation.Cell.cell 0 (estimator P A)
+      ≤ ((threshold P : Nat) : ℕ∞) ∧
     PaperItemSpaceBigO := by
-  refine ⟨?_, run_worstCaseSpace P A, paperItemSpaceBigO_proof⟩
+  refine ⟨?_, estimator_worstSpace_le P A, paperItemSpaceBigO_proof⟩
+  rw [estimatorOutput_eq]
   by_cases hsmall : F0 A < threshold P
   · exact small_stream_accuracy P A hsmall
   · exact run_accuracy_of_error_bounds P A
       (fail_probability_le P A)
       (nonfail_error_le_relaxed_error P A)
       (relaxed_error_probability_le P A (Nat.le_of_not_gt hsmall))
-
-/-- INTERNAL: specialization of the recursive-law Chernoff theorem to the public PMFs. -/
-theorem bernoulliSum_twoSidedChernoff_proof
-    (_hprior : Prior) (k : Nat) (p : Fin k → Set.Icc (0 : Real) 1)
-    (β : Real) (hβ : 0 < β) :
-    ((bernoulliSumPMFModel k p).toOuterMeasure
-      {V | β * (∑ i, (p i : Real)) ≤ |V - ∑ i, (p i : Real)|}).toReal ≤
-      2 * Real.exp (- (β ^ 2 * ∑ i, (p i : Real)) / (2 + β)) := by
-  apply bernoulliSum_twoSidedChernoff_core bernoulliPMFModel bernoulliSumPMFModel
-  · intro q b
-    simp [bernoulliPMFModel, PMF.ofFintype_apply]
-  · intro p
-    rfl
-  · intro n q
-    rfl
-  · exact hβ
 
 end Esa22Copy
 

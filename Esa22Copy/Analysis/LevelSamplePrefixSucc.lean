@@ -1,4 +1,4 @@
-import Esa22Copy.Model.Pseudocode
+import Esa22Copy.Interface.Pseudocode
 
 /-!
 # Fixed-level samples at a successor prefix

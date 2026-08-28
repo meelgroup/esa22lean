@@ -22,7 +22,7 @@ theorem runState_failure_probability_le (P : Params) (A : Stream P) :
     intro s hs
     rw [PMF.mem_support_pure_iff] at hs
     subst s
-    exact ⟨Nat.zero_le _, Nat.zero_le _, fun _ => threshold_pos P⟩
+    exact ⟨Nat.zero_le _, fun _ => threshold_pos P⟩
   have h := bind_foldlM_failure_probability_le P (List.ofFn A)
     (PMF.pure (initialState P)) hinit
   have hnot : ¬ FailedState (initialState P) := by

@@ -19,8 +19,9 @@ theorem finish_nonfail_error_iff_relaxed_error {P : Params} {A : Stream P}
     finish s ∈ errorEvent P A ↔ r ∈ relaxedErrorEvent P A := by
   obtain ⟨hsamples, hlevel, hanswer⟩ := hrel hnonfail
   simp only [errorEvent, accurateEvent, Set.mem_compl_iff, Set.mem_ofPred_eq,
-    finish, hanswer, relaxedErrorEvent, Accurate, rate]
-  rw [← hsamples, ← hlevel]
+    finish, hanswer, Option.isSome_none, Bool.false_eq_true, if_neg, not_false_eq_true,
+    relaxedErrorEvent, accurateEvent]
+  rw [← hsamples, ← hlevel, cast_scaled]
 
 end Esa22Copy
 

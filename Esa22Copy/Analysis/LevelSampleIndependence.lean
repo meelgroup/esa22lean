@@ -1,4 +1,4 @@
-import Esa22Copy.Model.Pseudocode
+import Esa22Copy.Interface.Pseudocode
 import Esa22Copy.Analysis.LevelSampleControllers
 import Esa22Copy.Analysis.UniformAcceptsAtInjective
 

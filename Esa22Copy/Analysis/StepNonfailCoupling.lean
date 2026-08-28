@@ -26,10 +26,7 @@ theorem step_nonfail_coupling {P : Params} (a : Item P) (s : State P)
       simp only [Set.mem_setOf_eq] at hfail
       cases h : s.answer with
       | none => simp [h] at hfail
-      | some ans =>
-        cases ans with
-        | none => simp [step, h]
-        | some x => simp [h] at hfail
+      | some ans => simp [step, h]
     have hvacuous : ∀ r : RelaxedState P, NonfailRel s r := by
       intro r hnonfail
       exact (hnonfail hfail).elim
@@ -76,7 +73,6 @@ theorem step_nonfail_coupling {P : Params} (a : Item P) (s : State P)
         change t ∈ (PMF.pure
           { samples := refreshed ∩ retained
             level := s.level + 1
-            peakSamples := max s.peakSamples refreshed.card
             answer := if (refreshed ∩ retained).card = threshold P
               then some none else none }).support at ht
         rw [PMF.mem_support_pure_iff] at ht
@@ -88,7 +84,6 @@ theorem step_nonfail_coupling {P : Params} (a : Item P) (s : State P)
         change t ∈ (PMF.pure
           { samples := refreshed
             level := s.level
-            peakSamples := max s.peakSamples refreshed.card
             answer := none }).support at ht
         rw [PMF.mem_support_pure_iff] at ht
         subst t

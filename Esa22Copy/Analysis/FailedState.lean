@@ -1,4 +1,4 @@
-import Esa22Copy.Model.Pseudocode
+import Esa22Copy.Interface.Pseudocode
 
 /-!
 # Explicit failure as a state predicate
@@ -13,7 +13,7 @@ namespace Esa22Copy
 INTERNAL: names the internal-state event whose finished output is explicit failure.
 -/
 def FailedState {P : Params} (s : State P) : Prop :=
-  (finish s).answer = none
+  finish s = none
 
 end Esa22Copy
 

@@ -1,5 +1,5 @@
 name = "esa22copy"
-defaultTargets = ["Esa22Copy"]
+defaultTargets = ["Esa22Copy", "Esa22CopyTest"]
 
 # Pinned so a fresh clone builds without a version hunt. If you bump the
 # toolchain in lean-toolchain, bump both revs below to match.
@@ -16,10 +16,22 @@ rev = "v4.33.0"
 # Reusable, problem-independent material (finite probability, multiplicative
 # error algebra, automata lower bounds, MDPs, …) lives here. Look for a lemma
 # in arlib before proving it in this project.
+# TEMPORARY: pointed at a local checkout so that the running-time development
+# (Model/TimeCost.lean, Analysis/TimeBound*.lean) can build against
+# `Arlib.Computation`, which is on the `computation-time-model` branch and not
+# yet on arlib's `main`.  Restore the git/rev form below once it lands:
+#
+#   git = "https://github.com/meelgroup/arlib.git"
+#   rev = "main"
 [[require]]
 name = "arlib"
-git = "https://github.com/meelgroup/arlib.git"
-rev = "main"
+path = "../../arlib"
 
 [[lean_lib]]
 name = "Esa22Copy"
+
+# The planted-breach tests for the cost seal.  A separate library so that the
+# deliberately-broken declarations they plant never reach a client of
+# `Esa22Copy`, and a default target so that `lake build` runs them.
+[[lean_lib]]
+name = "Esa22CopyTest"

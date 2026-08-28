@@ -8,3 +8,10 @@ Keep this file a pure aggregation of area roots — put content in the modules.
 -/
 
 import Esa22Copy.Model.Theorem
+
+/-
+The running time in *word* operations, which needs a rate for the sample-set
+implementation and so is a separate claim from the paper-facing ones.  The
+running time in dictionary operations is `Model.Theorem.esa22CopyTime`.
+-/
+import Esa22Copy.Analysis.TimeBoundRam

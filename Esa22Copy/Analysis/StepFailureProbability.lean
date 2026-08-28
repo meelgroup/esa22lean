@@ -27,11 +27,8 @@ theorem step_failure_probability_le (P : Params) (a : Item P) (s : State P)
     (step P a s).toOuterMeasure {t | FailedState t} ≤
       if FailedState s then 1 else ((2 : ℝ≥0∞)⁻¹) ^ threshold P := by
   classical
-  have failed_iff (u : State P) : FailedState u ↔ u.answer = some none := by
-    cases h : u.answer with
-    | none => simp [FailedState, finish, h]
-    | some answer =>
-        cases answer <;> simp [FailedState, finish, h]
+  have failed_iff (u : State P) : FailedState u ↔ u.answer.isSome := by
+    simp [FailedState, finish, Option.isSome_iff_ne_none]
   by_cases hfail : FailedState s
   · rw [if_pos hfail]
     calc
@@ -55,37 +52,31 @@ theorem step_failure_probability_le (P : Params) (a : Item P) (s : State P)
         let c : ℝ≥0∞ := ((2 : ℝ≥0∞)⁻¹) ^ threshold P
         have hconditional (bits : BitBlock P) :
             (let refreshed := refresh a s.level bits s.samples
-             let peak := max s.peakSamples refreshed.card
              if refreshed.card = threshold P then
                (freshSubset P).bind fun retained =>
                  let thinned := refreshed ∩ retained
                  pure
                    { samples := thinned
                      level := s.level + 1
-                     peakSamples := peak
                      answer := if thinned.card = threshold P then some none else none }
              else
                pure
                  { samples := refreshed
                    level := s.level
-                   peakSamples := peak
                    answer := none }).toOuterMeasure {t | FailedState t} ≤ c := by
           dsimp only
           let X := refresh a s.level bits s.samples
-          let peak := max s.peakSamples X.card
           change
             (if X.card = threshold P then
                (freshSubset P).bind fun retained =>
                  pure
                    { samples := X ∩ retained
                      level := s.level + 1
-                     peakSamples := peak
                      answer := if (X ∩ retained).card = threshold P then some none else none }
              else
                pure
                  { samples := X
                    level := s.level
-                   peakSamples := peak
                    answer := none }).toOuterMeasure {t | FailedState t} ≤ c
           by_cases hX : X.card = threshold P
           · rw [if_pos hX]
@@ -102,7 +93,6 @@ theorem step_failure_probability_le (P : Params) (a : Item P) (s : State P)
               ((freshSubset P).map fun retained =>
                 { samples := X ∩ retained
                   level := s.level + 1
-                  peakSamples := peak
                   answer := if (X ∩ retained).card = threshold P then some none else none }).toOuterMeasure
                   {t | FailedState t} ≤ c
             rw [PMF.toOuterMeasure_map_apply]
@@ -110,7 +100,6 @@ theorem step_failure_probability_le (P : Params) (a : Item P) (s : State P)
                 (fun retained : Finset (Item P) =>
                   { samples := X ∩ retained
                     level := s.level + 1
-                    peakSamples := peak
                     answer := if (X ∩ retained).card = threshold P then some none else none }) ⁻¹'
                     {t | FailedState t} = {Y | X ⊆ Y} := by
               ext retained
@@ -120,27 +109,23 @@ theorem step_failure_probability_le (P : Params) (a : Item P) (s : State P)
             change (PMF.pure
               { samples := X
                 level := s.level
-                peakSamples := peak
                 answer := none }).toOuterMeasure {t | FailedState t} ≤ c
             rw [PMF.toOuterMeasure_pure_apply]
             simp [failed_iff]
         calc
           ∑' bits, (freshBlock P) bits *
                 ((let refreshed := refresh a s.level bits s.samples
-                  let peak := max s.peakSamples refreshed.card
                   if refreshed.card = threshold P then
                     (freshSubset P).bind fun retained =>
                       let thinned := refreshed ∩ retained
                       pure
                         { samples := thinned
                           level := s.level + 1
-                          peakSamples := peak
                           answer := if thinned.card = threshold P then some none else none }
                   else
                     pure
                       { samples := refreshed
                         level := s.level
-                        peakSamples := peak
                         answer := none }).toOuterMeasure {t | FailedState t}) ≤
               ∑' bits, (freshBlock P) bits * c :=
             ENNReal.tsum_le_tsum fun bits =>

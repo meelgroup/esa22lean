@@ -1,11 +1,20 @@
-import Esa22Copy.Model.Pseudocode
+import Esa22Copy.Interface.Pseudocode
 
 /-!
-# Deterministic peak-sample bound
+# The sample set stays below the threshold
 
-Reachable original-algorithm states stay below the threshold while running.  A step
-can provisionally reach the threshold, records that value in the peak, and then either
-thins below it or records bottom and becomes stationary.
+Reachable states of the original algorithm never hold more than `threshold P`
+items, and while a run is still going they hold strictly fewer.  A step can
+provisionally reach the threshold, and then either thins below it or records
+bottom and becomes stationary.
+
+This used to be a bound on a `peakSamples` *field* — a high-water mark the model
+and the program each maintained by hand, with the bridge pinning the two to each
+other.  The field is gone.  What is left is the invariant, which is the honest
+part and is what `Analysis/SpaceBound.lean` feeds to
+`Arlib.Computation.Profile.peak_foldProfiles_le` to bound the program's own
+profile: *from a state below the ceiling, an arrival's excursion is at most the
+headroom.*
 -/
 
 namespace Esa22Copy
@@ -14,8 +23,7 @@ namespace Esa22Copy
 INTERNAL: packages the three facts about a reachable state needed by the step induction.
 -/
 def StateSpaceInvariant (P : Params) (s : State P) : Prop :=
-  s.peakSamples ≤ threshold P ∧ s.samples.card ≤ threshold P ∧
-    (s.answer = none → s.samples.card < threshold P)
+  s.samples.card ≤ threshold P ∧ (s.answer = none → s.samples.card < threshold P)
 
 /--
 INTERNAL: positivity of the paper's threshold under the positivity fields of `Params`.
@@ -50,14 +58,14 @@ INTERNAL: one supported transition preserves the deterministic state-space invar
 theorem step_preserves_space (P : Params) (a : Item P) {s t : State P}
     (hs : StateSpaceInvariant P s) (ht : t ∈ (step P a s).support) :
     StateSpaceInvariant P t := by
-  rcases hs with ⟨hpeak, hsamples, hrunning⟩
+  rcases hs with ⟨hsamples, hrunning⟩
   cases hanswer : s.answer with
   | some answer =>
       rw [step, hanswer] at ht
       change t ∈ (PMF.pure s).support at ht
       rw [PMF.mem_support_pure_iff] at ht
       subst t
-      exact ⟨hpeak, hsamples, hrunning⟩
+      exact ⟨hsamples, hrunning⟩
   | none =>
       rw [step, hanswer, PMF.mem_support_bind_iff] at ht
       obtain ⟨bits, _, ht⟩ := ht
@@ -73,14 +81,13 @@ theorem step_preserves_space (P : Params) (a : Item P) {s t : State P}
         change t ∈ (PMF.pure
           { samples := refreshed ∩ retained
             level := s.level + 1
-            peakSamples := max s.peakSamples refreshed.card
             answer := if (refreshed ∩ retained).card = threshold P
               then some none else none }).support at ht
         rw [PMF.mem_support_pure_iff] at ht
         subst t
         have hinter : (refreshed ∩ retained).card ≤ threshold P :=
           (Finset.card_le_card Finset.inter_subset_left).trans hrefreshed
-        refine ⟨max_le hpeak hrefreshed, hinter, ?_⟩
+        refine ⟨hinter, ?_⟩
         intro hnone
         change (refreshed ∩ retained).card < threshold P
         by_cases heq : (refreshed ∩ retained).card = threshold P
@@ -90,11 +97,10 @@ theorem step_preserves_space (P : Params) (a : Item P) {s t : State P}
         change t ∈ (PMF.pure
           { samples := refreshed
             level := s.level
-            peakSamples := max s.peakSamples refreshed.card
             answer := none }).support at ht
         rw [PMF.mem_support_pure_iff] at ht
         subst t
-        refine ⟨max_le hpeak hrefreshed, hrefreshed, ?_⟩
+        refine ⟨hrefreshed, ?_⟩
         intro
         change refreshed.card < threshold P
         omega
@@ -124,22 +130,21 @@ theorem runState_space_invariant (P : Params) (A : Stream P) (s : State P)
         obtain ⟨u, hu, ht⟩ := ht
         exact ih u t (step_preserves_space P a hs₀ hu) ht
   apply fold_preserves (List.ofFn A) (initialState P) s
-  · exact ⟨Nat.zero_le _, Nat.zero_le _, fun _ => threshold_pos P⟩
+  · exact ⟨Nat.zero_le _, fun _ => threshold_pos P⟩
   · exact hs
 
 /--
 PAPER: main.tex:1189-1191, the maintained sample set never exceeds the threshold.
+
+Stated about the *state*, which is what the paper's sentence is about.  It used
+to be stated about `outcome.1.peakSamples`, a field of the returned payload; that
+field recorded a number the model computed for itself, so the theorem bounded the
+model's bookkeeping rather than the algorithm's storage.  The bound on what the
+program holds is `Analysis/SpaceBound.lean`'s, and it is an operator applied to
+the program's profile.
 -/
-theorem run_peakSamples_le_threshold (P : Params) (A : Stream P)
-    (outcome : RunOutput P × Nat) (houtcome : outcome ∈ (run P A).support) :
-    outcome.1.peakSamples ≤ threshold P := by
-  rw [run, PMF.mem_support_bind_iff] at houtcome
-  obtain ⟨s, hs, houtcome⟩ := houtcome
-  have hinv := runState_space_invariant P A s hs
-  change outcome ∈
-    (PMF.pure (finish s, (finish s).peakSamples * itemBits P)).support at houtcome
-  rw [PMF.mem_support_pure_iff] at houtcome
-  subst outcome
-  exact hinv.1
+theorem runState_card_le_threshold (P : Params) (A : Stream P) (s : State P)
+    (hs : s ∈ (runState P A).support) : s.samples.card ≤ threshold P :=
+  (runState_space_invariant P A s hs).1
 
 end Esa22Copy

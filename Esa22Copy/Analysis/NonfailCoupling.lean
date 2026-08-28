@@ -21,8 +21,8 @@ theorem nonfail_error_le_relaxed_error (P : Params) (A : Stream P) :
       Arlib.Approximation.outProbR (relaxedRunCost P A) (relaxedErrorEvent P A) := by
   obtain ⟨κ, hfst, hsnd, hrel⟩ := runState_relaxedRun_nonfail_coupling P A
   let lift : State P × RelaxedState P →
-      (RunOutput P × Nat) × (RelaxedState P × Nat) := fun z =>
-    ((finish z.1, (finish z.1).peakSamples * itemBits P), (z.2, 0))
+      (Answer × Nat) × (RelaxedState P × Nat) := fun z =>
+    ((finish z.1, 0), (z.2, 0))
   let κ' := κ.map lift
   apply outProbR_le_of_supported_coupling
     (run P A) (relaxedRunCost P A)
@@ -30,10 +30,10 @@ theorem nonfail_error_le_relaxed_error (P : Params) (A : Stream P) :
   · calc
       κ'.map Prod.fst =
           (κ.map Prod.fst).map (fun s =>
-            (finish s, (finish s).peakSamples * itemBits P)) := by
+            (finish s, 0)) := by
         simp only [κ', lift, PMF.map_comp, Function.comp_def]
       _ = (runState P A).map (fun s =>
-            (finish s, (finish s).peakSamples * itemBits P)) := by rw [hfst]
+            (finish s, 0)) := by rw [hfst]
       _ = run P A := by rfl
   · calc
       κ'.map Prod.snd = (κ.map Prod.snd).map (fun r => (r, 0)) := by

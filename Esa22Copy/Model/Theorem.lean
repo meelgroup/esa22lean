@@ -1,60 +1,90 @@
-import Esa22Copy.Model.Prior
-import Esa22Copy.Model.Pseudocode
+import Esa22Copy.Model.Prelude
 import Esa22Copy.Analysis.TheoremProof
-import Esa22Copy.Analysis.BernoulliSumChernoffCore
+import Esa22Copy.Analysis.TimeBound
 
 /-!
-# Accuracy and worst-case space of the ESA 2022 distinct-elements estimator
+# Accuracy, worst-case space and worst-case time of the ESA 2022 estimator
+
+Every statement here is about `Esa22Copy.estimator`, the algorithm of
+`Model/Program.lean`.  `#modelClosureOfType` below machine-checks that each
+statement unfolds only to constants defined under `Model/`.
 -/
 
 namespace Esa22Copy
 
+open Arlib.Computation
+
 /--
 PAPER: esa22-final.tex:500-508.
 
-For every valid parameter block and stream, the estimator is accurate with probability
-at least `1 - delta`, every reachable run obeys both deterministic item-only space
-bounds, and those exact bounds have the paper's displayed big-O form in its
-nondegenerate `n,m ≥ 2` regime.
+For every valid parameter block and stream, the estimator is accurate with
+probability at least `1 - delta`, every reachable run holds at most `threshold P`
+sample items at its highest point, and that bound has the paper's displayed big-O
+form in its nondegenerate `n,m ≥ 2` regime.
+
+The space clause is an operator applied to the program.
+`Arlib.Computation.worstSpace` is the supremum, over the runs that can happen, of
+what `Charged.space` says a run held, and that profile is computed by the
+elaborator from the sequence of dictionary operations the program performs; there
+is nowhere in `Model/Program.lean` to write what a line occupies.
+
+The same `estimator` carries all three clauses: `estimatorOutput` is
+`Charged.val` applied to it, and `esa22CopyTime` bounds `worstSteps` of it.
+
+The bound is in **cells**, one per sample item.  The paper's bits are
+`itemBits P = ⌈log₂ n⌉` per cell — assumption 3 in `Model/Prelude.lean` — and
+`PaperItemSpaceBigO` is where that product meets the paper's displayed
+asymptotic.
 -/
 theorem esa22Copy (hprior : Prior) (P : Params) (A : Stream P) :
-    1 - P.delta ≤ Arlib.Approximation.outProbR (run P A) (accurateEvent P A) ∧
-    WorstCaseSpace (run P A) (threshold P * itemBits P) ∧
+    1 - P.delta ≤ Arlib.Approximation.outProbR (estimatorOutput P A) (accurateEvent P A) ∧
+    Arlib.Computation.worstSpace Cell.cell 0 (estimator P A)
+      ≤ ((threshold P : Nat) : ℕ∞) ∧
     PaperItemSpaceBigO := by
   exact esa22Copy_proof hprior P A
 
-/-- A Bernoulli PMF at an arbitrary real rate in `[0, 1]`. -/
-noncomputable def bernoulliPMF (p : Set.Icc (0 : Real) 1) : PMF Bool :=
-  bernoulliPMFModel p
-
 /--
-Draw independent Bernoulli variables at the supplied real rates and return their sum.
-Independence is the recursive `PMF.bind` composition, rather than a hypothesis about
-an external probability space.  The rates are arbitrary reals in `[0, 1]`.
--/
-noncomputable def bernoulliSumPMF :
-    (k : Nat) → (p : Fin k → Set.Icc (0 : Real) 1) → PMF Real
-  | k, p => bernoulliSumPMFModel k p
+NOT IN THE PAPER.  The paper states a space bound and no running-time bound; the
+word "time" does not occur in it.
 
-/--
-For independent Bernoulli draws with arbitrary (not necessarily identical) real rates,
-the inclusive two-sided relative-deviation event of their sum obeys the paper's
-Chernoff bound.  The probability is measured directly on the output law of
-`bernoulliSumPMF`, and the statement includes `k = 0`.
+`Arlib.Computation.worstSteps R mu` is the largest number of steps a run of the
+randomised charged computation `mu` can perform, priced at the rate `R`; here `R`
+charges one for each dictionary operation.
+
+The quantity is `P.m * (2 * threshold P + 8) + 3`: five operations per arrival —
+the test asking whether the run has already stopped, the erase, the insertion
+coin, the reinsertion, and the comparison of `|X|` with the threshold — plus
+`2 * threshold P + 3` for each thinning — one retain/discard coin and at most one
+deletion per sampled element, the level halving, the second threshold test and
+the write of bottom into the answer register — plus three for the paper's last
+line, `return |X| / p`: the stop test, the size query, and the division.  It is
+`Arlib.Computation.Charged.cost` applied to the program of `Model/Program.lean`,
+so it counts the operations the algorithm performs.
+
+`Analysis/TimeBoundRam.lean` carries the same bound into word operations, given a
+rate for the sample-set implementation.
 -/
-theorem bernoulliSum_twoSidedChernoff
-    (hprior : Prior) (k : Nat) (p : Fin k → Set.Icc (0 : Real) 1)
-    (β : Real) (hβ : 0 < β) :
-    ((bernoulliSumPMF k p).toOuterMeasure
-      {V | β * (∑ i, (p i : Real)) ≤ |V - ∑ i, (p i : Real)|}).toReal ≤
-      2 * Real.exp (- (β ^ 2 * ∑ i, (p i : Real)) / (2 + β)) := by
-  exact bernoulliSum_twoSidedChernoff_proof hprior k p β hβ
+theorem esa22CopyTime (P : Params) (A : Stream P) :
+    worstSteps (Rate.unit StdOp) (estimator P A)
+      ≤ ((P.m * (2 * threshold P + 8) + 3 : Nat) : ℕ∞) :=
+  estimator_worstSteps_le P A
 
 end Esa22Copy
 
 #modelClosureOfType Esa22Copy.esa22Copy
 #print axioms Esa22Copy.esa22Copy
-#modelClosure Esa22Copy.bernoulliPMF
-#modelClosure Esa22Copy.bernoulliSumPMF
-#modelClosureOfType Esa22Copy.bernoulliSum_twoSidedChernoff
-#print axioms Esa22Copy.bernoulliSum_twoSidedChernoff
+#modelClosureOfType Esa22Copy.esa22CopyTime
+#print axioms Esa22Copy.esa22CopyTime
+
+/-! The other half of the closure audit: `#modelClosureOfType` above says no
+statement reaches outside `Model/`; this says nothing inside `Model/` goes
+unreached by a statement.
+
+`Model/Program.lean` runs the same check against a tighter seed — the algorithm's
+own entry points — which keeps a definition like `paperSpaceScale` out of the
+program even though the headline statement reaches it. -/
+#surplusIn Esa22Copy.Model from Esa22Copy.esa22Copy Esa22Copy.esa22CopyTime
+
+/-! The driver seal, with the whole development in scope: `Interface/` and
+`Analysis/` too, which is where the specification views of a run live. -/
+#driverSeal Esa22Copy.Program

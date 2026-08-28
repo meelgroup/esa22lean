@@ -1,4 +1,4 @@
-import Esa22Copy.Model.Pseudocode
+import Esa22Copy.Interface.Pseudocode
 import Mathlib.Data.Fin.Tuple.Take
 import Mathlib.Logic.Equiv.Fin.Basic
 

@@ -21,13 +21,12 @@ theorem run_failEvent_eq_state_failure (P : Params) (A : Stream P) :
   rw [PMF.toOuterMeasure_apply]
   apply tsum_congr
   intro s
-  dsimp only
   change (runState P A) s *
-      (PMF.pure (finish s, (finish s).peakSamples * itemBits P)).toOuterMeasure
+      (PMF.pure (finish s, 0)).toOuterMeasure
         {p | p.1 ∈ failEvent P} =
     {s | FailedState s}.indicator (runState P A) s
   rw [PMF.toOuterMeasure_pure_apply]
-  by_cases h : (finish s).answer = none <;>
+  by_cases h : finish s = none <;>
     simp [failEvent, FailedState, h]
 
 end Esa22Copy
